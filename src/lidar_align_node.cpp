@@ -52,11 +52,13 @@ int main(int argc, char** argv) {
   }
 
   ROS_INFO("Interpolating Transformation Data...                          ");
-  //
+  //设置每个scan里面的每个点的当前imu 的位姿 T_o0_ot_ 用于去畸变
   lidar.setOdomOdomTransforms(odom);
-
+  
+  //初始化aligner
   Aligner aligner(Aligner::getConfig(&nh_private));
 
+  //求解aligner lidar与odom的相对变换 输出标定结果
   aligner.lidarOdomTransform(&lidar, &odom);
 
   return 0;

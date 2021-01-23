@@ -3,7 +3,7 @@
 namespace lidar_align {
 
 Aligner::Aligner(const Config& config) : config_(config){};
-
+//aligner get config
 Aligner::Config Aligner::getConfig(ros::NodeHandle* nh) {
   Aligner::Config config;
   nh->param("local", config.local, config.local);
@@ -100,19 +100,20 @@ float Aligner::lidarOdomKNNError(const Lidar& lidar) const {
   lidar.getCombinedPointcloud(&pointcloud);
   return lidarOdomKNNError(pointcloud, pointcloud);
 }
-
+//optimize里面使用的LidarOdomMinimizer
 double Aligner::LidarOdomMinimizer(const std::vector<double>& x,
                                    std::vector<double>& grad, void* f_data) {
   OptData* d = static_cast<OptData*>(f_data);
-
+  //当x.size大于6 重新设置lidar的scan里面的pointcloud的T_o0_ot_ 在config_.local为false x为3
   if (x.size() > 6) {
     d->lidar->setOdomOdomTransforms(*(d->odom), x[6]);
   }
 
   Eigen::Matrix<double, 6, 1> vec;
   vec.setZero();
-
+  //x.size()在config_.local为false x为3 true x为0
   const size_t offset = x.size() == 3 ? 3 : 0;
+  //
   for (size_t i = offset; i < 6; ++i) {
     vec[i] = x[i - offset];
   }
@@ -140,31 +141,36 @@ double Aligner::LidarOdomMinimizer(const std::vector<double>& x,
 
   return error;
 }
-
+//aligner 的optimize lb为下边界 ub上边界 x为初值
 void Aligner::optimize(const std::vector<double>& lb,
-                       const std::vector<double>& ub, OptData* opt_data,
+                       const std::vector<double>& ub, OptData* opt_data,//x 为 初始值 为返回值
                        std::vector<double>* x) {
   nlopt::opt opt;
+  //L/G N/D 代表全局最优与局部最优 代表无导数与有导数
+  //DIRECT指的是Dividing Rectangles算法
+  //BOBYQA接口支持不同参数中不相等的初始步长
+  //参考 https://blog.csdn.net/qq_38528731/article/details/108431037
   if (config_.local) {
     opt = nlopt::opt(nlopt::LN_BOBYQA, x->size());
   } else {
     opt = nlopt::opt(nlopt::GN_DIRECT_L, x->size());
   }
-
+  //opt 设置上下限
   opt.set_lower_bounds(lb);
   opt.set_upper_bounds(ub);
-
+  //设置停止条件
   opt.set_maxeval(config_.max_evals);
   opt.set_xtol_abs(config_.xtol);
-
+  //设定目标函数 LidarOdomMinimizer 
   opt.set_min_objective(LidarOdomMinimizer, opt_data);
 
-  double minf;
+  double minf; //目标函数的最小值
   std::vector<double> grad;
   nlopt::result result = opt.optimize(*x, minf);
+  //跳转至上方的LidarOdomMinimizer  x为输入，grad为梯度返回值，opt_data为函数所需传入的自定义参数
   LidarOdomMinimizer(*x, grad, opt_data);
 }
-
+//输出calibration
 std::string Aligner::generateCalibrationString(const Transform& T,
                                                const double time_offset) {
   Transform::Vector6 T_log = T.log();
@@ -223,7 +229,7 @@ std::string Aligner::generateCalibrationString(const Transform& T,
 
   return ss.str();
 }
-
+//求解aligner lidar与odom的相对变换
 void Aligner::lidarOdomTransform(Lidar* lidar, Odom* odom) {
   OptData opt_data;
   opt_data.lidar = lidar;
@@ -232,28 +238,30 @@ void Aligner::lidarOdomTransform(Lidar* lidar, Odom* odom) {
   opt_data.time_cal = config_.time_cal;
 
   size_t num_params = 6;
+  //当time_cal 为真 会在x[6]记录time
   if (config_.time_cal) {
     ++num_params;
   }
-
+  //设置num_params 初值0
   std::vector<double> x(num_params, 0.0);
 
   if (!config_.local) {
     ROS_INFO("Performing Global Optimization...                             ");
-
+    //上下限设置
     std::vector<double> lb = {-M_PI, -M_PI, -M_PI};
     std::vector<double> ub = {M_PI, M_PI, M_PI};
-
+    
     std::vector<double> global_x(3, 0.0);
-    optimize(lb, ub, &opt_data, &global_x);
+    //使用optimize 来进行optimization
+    optimize(lb, ub, &opt_data, &global_x);//lb ub 3 global_x 3
     config_.local = true;
-
+    //global_x设置x
     x[3] = global_x[0];
     x[4] = global_x[1];
     x[5] = global_x[2];
 
   } else {
-    x = config_.inital_guess;
+    x = config_.inital_guess; //x.size 7
   }
 
   ROS_INFO("Performing Local Optimization...                                ");
@@ -270,13 +278,15 @@ void Aligner::lidarOdomTransform(Lidar* lidar, Odom* odom) {
     lb[i] += x[i];
     ub[i] += x[i];
   }
+  //ub lb设置max_time_offset
   if (config_.time_cal) {
     ub.push_back(config_.max_time_offset);
     lb.push_back(-config_.max_time_offset);
   }
-
+  //x为size 6 7
   optimize(lb, ub, &opt_data, &x);
 
+  //存储pointcloud
   if (!config_.output_pointcloud_path.empty()) {
     ROS_INFO(
         "Saving Aligned Pointcloud...                                     ");
@@ -284,7 +294,7 @@ void Aligner::lidarOdomTransform(Lidar* lidar, Odom* odom) {
   }
 
   const std::string output_calibration =
-      generateCalibrationString(lidar->getOdomLidarTransform(), x.back());
+      generateCalibrationString(lidar->getOdomLidarTransform(), x.back()); //输出calibration 结果
   if (!config_.output_calibration_path.empty()) {
     ROS_INFO("Saving Calibration File...                                ");
 

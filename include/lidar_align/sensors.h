@@ -23,9 +23,9 @@ struct EIGEN_ALIGN16 PointAllFields {
   uint16_t reflectivity;
   uint16_t intensity;
   uint8_t ring;
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW  
 };
-
+//自定义pcl 数据格式
 typedef pcl::PointXYZI Point;
 typedef pcl::PointCloud<Point> Pointcloud;
 typedef pcl::PointCloud<PointAllFields> LoaderPointcloud;
@@ -89,7 +89,7 @@ class Scan {
   Timestamp timestamp_us_;  // signed to allow simpler comparisons
   Pointcloud raw_points_;
   std::vector<Transform>
-      T_o0_ot_;  // absolute odom transform to each point in pointcloud
+      T_o0_ot_;  // ！！！！absolute odom transform to each point in pointcloud
 
   bool odom_transform_set_;
 };

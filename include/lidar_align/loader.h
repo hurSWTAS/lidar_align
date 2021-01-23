@@ -13,7 +13,7 @@ namespace lidar_align {
 class Loader {
  public:
   struct Config {
-    int use_n_scans = std::numeric_limits<int>::max();
+    int use_n_scans = std::numeric_limits<int>::max();//use_n_scans 设置为最大 
   };
 
   Loader(const Config& config);
@@ -37,7 +37,7 @@ class Loader {
   Config config_;
 };
 }  // namespace lidar_align
-
+//自定义点云的register
 POINT_CLOUD_REGISTER_POINT_STRUCT(
     lidar_align::PointAllFields,
     (float, x, x)(float, y, y)(float, z, z)(int32_t, time_offset_us,
