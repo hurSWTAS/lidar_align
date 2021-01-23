@@ -1,5 +1,8 @@
 # lidar_align
-
+## 参考 https://blog.csdn.net/tfb760/article/details/108581092
+## 参考 https://www.cnblogs.com/gangyin/p/13366683.html
+## 并且完成了绝大部分注释
+## 后续待做1.依据上述两篇博客做的一些修改 2.将ICP更换为ndt
 ## A simple method for finding the extrinsic calibration between a 3D lidar and a 6-dof pose sensor
 
 **Note: Accurate results require highly non-planar motions, this makes the technique poorly suited for calibrating sensors mounted to cars.**

@@ -14,7 +14,8 @@ Loader::Config Loader::getConfig(ros::NodeHandle* nh) {
   nh->param("use_n_scans", config.use_n_scans, config.use_n_scans);
   return config;
 }
-
+//处理得到的点云数据
+//将filed中带有time_offset_us intensity的点云重新整理放入自定义的点云格式中
 void Loader::parsePointcloudMsg(const sensor_msgs::PointCloud2 msg,
                                 LoaderPointcloud* pointcloud) {
   bool has_timing = false;
@@ -69,7 +70,7 @@ void Loader::parsePointcloudMsg(const sensor_msgs::PointCloud2 msg,
     pointcloud->header = raw_pointcloud.header;
   }
 }
-
+//从rosbag读取点云数据 有极大的参考价值
 bool Loader::loadPointcloudFromROSBag(const std::string& bag_path,
                                       const Scan::Config& scan_config,
                                       Lidar* lidar) {
@@ -89,13 +90,14 @@ bool Loader::loadPointcloudFromROSBag(const std::string& bag_path,
   for (const rosbag::MessageInstance& m : view) {
     std::cout << " Loading scan: \e[1m" << scan_num++ << "\e[0m from ros bag"
               << '\r' << std::flush;
-
+    //该项自定义的数据在sensor.h里面定义
     LoaderPointcloud pointcloud;
+    //处理数据 将rosbag的数据读入到pointcloud
     parsePointcloudMsg(*(m.instantiate<sensor_msgs::PointCloud2>()),
                        &pointcloud);
-
+    //将读入的数据传到lidar里面
     lidar->addPointcloud(pointcloud, scan_config);
-
+    //如果帧数已经大于设定的标定所用帧数就break
     if (lidar->getNumberOfScans() >= config_.use_n_scans) {
       break;
     }
@@ -109,7 +111,8 @@ bool Loader::loadPointcloudFromROSBag(const std::string& bag_path,
 
   return true;
 }
-
+//读入rosbag的odom信息
+//TODO 重点改这个部分
 bool Loader::loadTformFromROSBag(const std::string& bag_path, Odom* odom) {
   rosbag::Bag bag;
   try {
@@ -141,7 +144,7 @@ bool Loader::loadTformFromROSBag(const std::string& bag_path, Odom* odom) {
                                     transform_msg.transform.rotation.x,
                                     transform_msg.transform.rotation.y,
                                     transform_msg.transform.rotation.z));
-    odom->addTransformData(stamp, T);
+    odom->addTransformData(stamp, T);//将读入的数据转到odom里面
   }
 
   if (odom->empty()) {

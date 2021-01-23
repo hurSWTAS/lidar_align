@@ -44,7 +44,7 @@ Transform Odom::getOdomTransform(const Timestamp timestamp_us,
 
   return out;
 }
-
+//scan初始化函数
 Scan::Scan(const LoaderPointcloud& in, const Config& config)
     : timestamp_us_(in.header.stamp), odom_transform_set_(false) {
   std::default_random_engine generator(in.header.stamp);
@@ -83,7 +83,7 @@ Scan::Scan(const LoaderPointcloud& in, const Config& config)
   }
   raw_points_.header = in.header;
 }
-
+//获得 Scan::Config参数
 Scan::Config Scan::getConfig(ros::NodeHandle* nh) {
   Scan::Config config;
   nh->param("min_point_distance", config.min_point_distance,
@@ -161,7 +161,7 @@ const size_t Lidar::getTotalPoints() const {
 }
 
 const LidarId& Lidar::getId() const { return lidar_id_; }
-
+//记录新加入的帧
 void Lidar::addPointcloud(const LoaderPointcloud& pointcloud,
                           const Scan::Config& config) {
   scans_.emplace_back(pointcloud, config);
@@ -180,7 +180,7 @@ void Lidar::saveCombinedPointcloud(const std::string& file_path) const {
   pcl::PLYWriter writer;
   writer.write(file_path, combined, true);
 }
-
+//设置lidar里面的每帧的odom ？ transform ？，time_offset默认为0 
 void Lidar::setOdomOdomTransforms(const Odom& odom, const double time_offset) {
   size_t idx = 0;
   for (Scan& scan : scans_) {

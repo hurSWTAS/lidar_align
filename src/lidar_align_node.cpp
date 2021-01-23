@@ -12,18 +12,18 @@ int main(int argc, char** argv) {
   ros::init(argc, argv, "lidar_align");
 
   ros::NodeHandle nh, nh_private("~");
-
+  //将句柄传入loader 拿到use_n_scans参数
   Loader loader(Loader::getConfig(&nh_private));
-
+  //初始化lidar odom
   Lidar lidar;
   Odom odom;
-
+  //处理rosbag数据
   std::string input_bag_path;
   ROS_INFO("Loading Pointcloud Data...");
   if (!nh_private.getParam("input_bag_path", input_bag_path)) {
     ROS_FATAL("Could not find input_bag_path parameter, exiting");
     exit(EXIT_FAILURE);
-  } else if (!loader.loadPointcloudFromROSBag(
+  } else if (!loader.loadPointcloudFromROSBag(  //将lidar的rosbag数据读入 转到loader.cpp 传入bag_path Scan::Config 初始化的lidar
                  input_bag_path, Scan::getConfig(&nh_private), &lidar)) {
     ROS_FATAL("Error loading pointclouds from ROS bag.");
     exit(0);
@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
       ROS_FATAL("Error loading transforms from CSV.");
       exit(0);
     }
-  } else if (!loader.loadTformFromROSBag(input_bag_path, &odom)) {
+  } else if (!loader.loadTformFromROSBag(input_bag_path, &odom)) { //odom的数据读入 转到loader.cpp 传入bag_path 以及初始化的odom
     ROS_FATAL("Error loading transforms from ROS bag.");
     exit(0);
   }
@@ -52,6 +52,7 @@ int main(int argc, char** argv) {
   }
 
   ROS_INFO("Interpolating Transformation Data...                          ");
+  //
   lidar.setOdomOdomTransforms(odom);
 
   Aligner aligner(Aligner::getConfig(&nh_private));
