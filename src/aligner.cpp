@@ -111,15 +111,18 @@ double Aligner::LidarOdomMinimizer(const std::vector<double>& x,
 
   Eigen::Matrix<double, 6, 1> vec;
   vec.setZero();
-  //x.size()在config_.local为false x为3 true x为0
+  //x.size()在config_.local为
+  //false offset为3 
+  //true  offset为0
   const size_t offset = x.size() == 3 ? 3 : 0;
-  //
+  //offset为3 vec[3-6] = x[0-3]
+  //offset为0 vec[0-6] = x[0-6]
   for (size_t i = offset; i < 6; ++i) {
     vec[i] = x[i - offset];
   }
-
+  //设置tOdomLidarTransform
   d->lidar->setOdomLidarTransform(Transform::exp(vec.cast<float>()));
-
+  //计算error
   double error = d->aligner->lidarOdomKNNError(*(d->lidar));
 
   static int i = 0;
